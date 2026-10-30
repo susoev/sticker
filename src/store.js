@@ -11,7 +11,11 @@ function cleanLines(lines) {
   if (!Array.isArray(lines)) return [];
   return lines
     .filter(l => l && typeof l.text === 'string')
-    .map(l => ({ id: String(l.id || Math.random().toString(36).slice(2)), text: l.text }));
+    .map(l => {
+      const out = { id: String(l.id || Math.random().toString(36).slice(2)), text: l.text };
+      if (l.bold === true) out.bold = true;
+      return out;
+    });
 }
 
 class NotesStore {

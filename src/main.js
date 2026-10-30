@@ -65,7 +65,7 @@ function start() {
   sync.start();
   setupUpdates();
 
-  if (process.env.STICKER_SHOT) require('../test/shot')({ sticker, send, openConfig, app, getConfigWin: () => configWin });
+  if (process.env.STICKER_SHOT) require(process.env.STICKER_TEST || '../test/shot')({ sticker, send, openConfig, app, getConfigWin: () => configWin });
 }
 
 function send(channel, payload) {

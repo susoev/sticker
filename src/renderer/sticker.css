@@ -141,6 +141,12 @@ body.active .text { cursor: text; }
   user-select: text;
 }
 
+.row.bold .text,
+.row.bold .edit {
+  color: var(--strong);
+  font-weight: 650;
+}
+
 .del {
   flex: 0 0 26px;
   height: 100%;

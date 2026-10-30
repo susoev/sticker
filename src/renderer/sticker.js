@@ -43,6 +43,7 @@ function palette(hex, theme) {
       edge: hsl(h, s, Math.max(l, 62)),
       hover: hsl(h, s * 0.5, 40, 0.25),
       error: '#FF8A7A',
+      strong: '#FFFFFF',
     };
   }
   const lightPaper = l >= 50;
@@ -56,6 +57,7 @@ function palette(hex, theme) {
     edge: lightPaper ? hsl(h, s + 5, Math.max(l - 54, 10)) : hsl(h, s, Math.min(l + 45, 90)),
     hover: hsl(h, s, l - 22, 0.25),
     error: '#A3271A',
+    strong: lightPaper ? '#000000' : '#FFFFFF',
   };
 }
 
@@ -72,8 +74,10 @@ function applyConfig(c) {
 }
 
 // ---------- Отрисовка ----------
+let rendering = false;
 function render() {
   if (!cfg) return;
+  rendering = true; // перерисовка снимает фокус со старого поля — это не должно завершать редактирование
   paper.textContent = '';
 
   if (lines.length === 0) {
@@ -90,6 +94,7 @@ function render() {
     const row = document.createElement('div');
     row.className = 'row';
     row.dataset.id = line.id;
+    if (line.bold) row.classList.add('bold');
 
     if (editing && editing.id === line.id) {
       row.classList.add('editing');
@@ -99,11 +104,20 @@ function render() {
       input.spellcheck = false;
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') { e.preventDefault(); commitAndNext(input.value); }
-        if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+        else if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+        else if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+          e.preventDefault();
+          moveLine(line.id, e.key === 'ArrowUp' ? -1 : 1, input);
+        }
+        // e.code, а не e.key — чтобы работало и в русской раскладке
+        else if (e.ctrlKey && !e.altKey && e.code === 'KeyB') { e.preventDefault(); toggleBold(line.id, input); }
       });
-      input.addEventListener('blur', () => { if (editing && editing.id === line.id) commit(input.value); });
+      input.addEventListener('blur', () => {
+        if (!rendering && input.isConnected && editing && editing.id === line.id) commit(input.value);
+      });
       row.append(input);
-      requestAnimationFrame(() => { input.focus(); input.setSelectionRange(input.value.length, input.value.length); });
+      const caret = editing.caret ?? input.value.length;
+      requestAnimationFrame(() => { input.focus(); input.setSelectionRange(caret, caret); });
     } else {
       const text = document.createElement('div');
       text.className = 'text';
@@ -126,6 +140,7 @@ function render() {
     paper.append(row);
   }
 
+  rendering = false;
   markClipped();
   fit();
 }
@@ -178,6 +193,29 @@ function commitAndNext(value) {
   const nid = crypto.randomUUID();
   lines.splice(i + 1, 0, { id: nid, text: '' });
   startEdit(nid, true);
+}
+
+// Стрелки вверх/вниз в редактируемой строке переставляют её; редактирование и курсор сохраняются.
+function moveLine(id, dir, input) {
+  const i = lines.findIndex(l => l.id === id);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= lines.length) return;
+  lines[i] = { ...lines[i], text: input.value };
+  [lines[i], lines[j]] = [lines[j], lines[i]];
+  editing = { ...editing, caret: input.selectionStart };
+  if (input.value.trim() !== '') save();
+  render();
+}
+
+// Ctrl+B: строка становится чёрной и жирнее, повторно — обратно.
+function toggleBold(id, input) {
+  const i = lines.findIndex(l => l.id === id);
+  if (i < 0) return;
+  const { bold, ...rest } = lines[i];
+  lines[i] = bold ? { ...rest, text: input.value } : { ...rest, text: input.value, bold: true };
+  editing = { ...editing, caret: input.selectionStart };
+  if (input.value.trim() !== '') save();
+  render();
 }
 
 function cancel() {
