@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, ipcMain, screen, nativeImage, dialog } = require('electron');
+const { app, BrowserWindow, Tray, Menu, ipcMain, screen, nativeImage, dialog, powerMonitor } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -130,14 +130,69 @@ function createSticker() {
   });
 
   // Alt+F4 прячет в трей, а не закрывает.
+  // Alt+F4 ничего не делает: прятать стикер можно только кнопкой на переплёте.
   sticker.on('close', (e) => {
-    if (!quitting) { e.preventDefault(); sticker.hide(); }
+    if (!quitting) { e.preventDefault(); log('win close blocked'); }
   });
+
+  // Всё, что может спрятать окно, пишем в лог — чтобы понять причину, если стикер снова пропадёт.
+  for (const ev of ['minimize', 'restore', 'hide', 'show']) {
+    sticker.on(ev, () => log('win', ev, 'want=' + wantVisible));
+  }
+  // Win+D / Win+M / «Свернуть всё» сворачивают окно — сразу возвращаем, не забирая фокус.
+  sticker.on('minimize', () => { if (wantVisible) setTimeout(ensureVisible, 100); });
+  sticker.on('always-on-top-changed', (_e, on) => {
+    log('win always-on-top', on);
+    if (!on) sticker.setAlwaysOnTop(true, 'floating');
+  });
+
+  // Страховка: раз в 2 секунды проверяем, что окно на месте.
+  setInterval(ensureVisible, 2000);
+  screen.on('display-removed', ensureOnScreen);
+  screen.on('display-metrics-changed', ensureOnScreen);
+  powerMonitor.on('resume', () => { log('resume'); setTimeout(ensureVisible, 1500); });
+  powerMonitor.on('unlock-screen', () => { log('unlock'); setTimeout(ensureVisible, 1500); });
+}
+
+// Окно должно быть видно, если пользователь сам не убрал его в трей.
+let wantVisible = true;
+function ensureVisible() {
+  if (!wantVisible || !sticker || sticker.isDestroyed()) return;
+  if (sticker.isMinimized()) {
+    log('fix: minimized');
+    sticker.showInactive();
+    if (sticker.isMinimized()) sticker.restore();
+  }
+  if (!sticker.isVisible()) {
+    log('fix: hidden');
+    sticker.showInactive();
+  }
+  if (!sticker.isAlwaysOnTop()) {
+    log('fix: not on top');
+    sticker.setAlwaysOnTop(true, 'floating');
+  }
+}
+
+// После смены мониторов/разрешения окно могло оказаться за пределами экрана.
+function ensureOnScreen() {
+  if (!sticker || sticker.isDestroyed()) return;
+  const b = sticker.getBounds();
+  const visible = screen.getAllDisplays().some(({ workArea: a }) =>
+    b.x + 40 > a.x && b.x < a.x + a.width - 40 && b.y >= a.y - 10 && b.y < a.y + a.height - 40);
+  if (!visible) {
+    const a = screen.getPrimaryDisplay().workArea;
+    log('fix: off-screen', JSON.stringify(b));
+    sticker.setPosition(a.x + a.width - b.width - 24, a.y + 24);
+  }
 }
 
 function showSticker() {
   if (!sticker) return;
+  wantVisible = true;
+  ensureOnScreen();
+  if (sticker.isMinimized()) sticker.restore();
   sticker.show();
+  sticker.setAlwaysOnTop(true, 'floating');
   sticker.focus();
 }
 
@@ -236,7 +291,11 @@ ipcMain.on('resize', (_e, height) => {
   sticker.setContentSize(config.data.width, h);
 });
 
-ipcMain.on('hide', () => sticker && sticker.hide());
+ipcMain.on('hide', () => {
+  if (!sticker) return;
+  wantVisible = false;
+  sticker.hide();
+});
 
 ipcMain.on('theme:toggle', () => {
   config.set({ ...config.data, theme: config.data.theme === 'dark' ? 'light' : 'dark' });
