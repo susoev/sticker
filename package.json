@@ -1,0 +1,60 @@
+{
+  "name": "sticker",
+  "productName": "Sticker",
+  "version": "1.0.2",
+  "description": "Стикер со строками поверх окон, с синхронизацией",
+  "main": "src/main.js",
+  "author": "t.susoev",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis --x64 --publish never",
+    "release": "electron-builder --win nsis --x64 --publish always"
+  },
+  "build": {
+    "appId": "in.alid.sticker",
+    "productName": "Sticker",
+    "files": [
+      "src/**",
+      "assets/**",
+      "package.json"
+    ],
+    "win": {
+      "icon": "assets/icon.ico",
+      "signExecutable": false
+    },
+    "directories": {
+      "output": "dist"
+    },
+    "electronLanguages": [
+      "ru",
+      "en-US"
+    ],
+    "compression": "maximum",
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "runAfterFinish": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Sticker",
+      "artifactName": "Sticker-Setup-${version}.exe"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "susoev",
+        "repo": "sticker",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "devDependencies": {
+    "electron": "^45.1.0",
+    "electron-builder": "^26.18.0"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11"
+  },
+  "repository": "https://github.com/susoev/sticker"
+}

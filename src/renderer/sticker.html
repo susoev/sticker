@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+<title>Sticker</title>
+<link rel="stylesheet" href="sticker.css">
+</head>
+<body>
+  <div class="sheet">
+    <header class="binding">
+      <div class="brand">
+        <span class="sync" id="sync" title="Синхронизация ещё не выполнялась"></span>
+        <span class="label">susoev/sticker</span>
+      </div>
+      <div class="tools">
+        <button class="btn" id="theme" title="Сменить тему" aria-label="Сменить тему">
+          <svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 2.75a5.25 5.25 0 0 1 0 10.5z" fill="currentColor"/></svg>
+        </button>
+        <button class="btn" id="hide" title="Свернуть в трей" aria-label="Свернуть в трей">
+          <svg viewBox="0 0 16 16"><path d="M3.5 11.5h9" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>
+        </button>
+        <button class="btn add" id="add" title="Новая строка" aria-label="Новая строка">
+          <svg viewBox="0 0 16 16"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </header>
+    <main class="paper" id="paper"></main>
+  </div>
+<script src="sticker.js"></script>
+</body>
+</html>

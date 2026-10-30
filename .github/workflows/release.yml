@@ -1,0 +1,39 @@
+# Каждый push в main: сборка установщика на Windows и публикация релиза.
+# Установленные копии Sticker сами находят новый релиз и обновляются.
+name: release
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md', 'test/**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Версия = 1.1.<номер запуска>; руками менять не нужно.
+      - name: Set version
+        shell: bash
+        run: npm version "1.1.${{ github.run_number }}" --no-git-tag-version --allow-same-version
+
+      - name: Build and publish
+        run: npm run release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,166 @@
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  user-select: none;
+  font-family: var(--font);
+  font-size: var(--fs);
+  color: var(--ink);
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* ---------- Переплёт ---------- */
+.binding {
+  position: relative;
+  flex: 0 0 34px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 5px 6px 0 10px;
+  background: var(--binding);
+  border-radius: 7px 7px 0 0;
+  opacity: var(--op-binding);
+  transition: opacity .15s ease;
+  -webkit-app-region: drag;
+}
+
+.tools { display: flex; gap: 5px; }
+
+.btn {
+  -webkit-app-region: no-drag;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--edge);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--edge);
+  cursor: pointer;
+}
+.btn svg { width: 14px; height: 14px; }
+.btn:hover { background: var(--hover); }
+.btn:focus-visible { outline: 2px solid var(--edge); outline-offset: 1px; }
+
+.btn.add {
+  background: var(--edge);
+  color: var(--field);
+}
+.btn.add:hover { filter: brightness(1.15); }
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 24px;
+}
+.label {
+  font: 600 12px/1 "Segoe UI", sans-serif;
+  letter-spacing: .01em;
+  color: var(--edge);
+  opacity: .75;
+}
+.sync {
+  -webkit-app-region: no-drag;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--edge);
+  opacity: .55;
+}
+.sync.ok { background: var(--edge); }
+.sync.error { border-color: var(--error); background: transparent; opacity: 1; }
+
+/* ---------- Лист ---------- */
+.paper {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 20px;
+  background:
+    linear-gradient(to right, transparent 29px, var(--margin) 29px, var(--margin) 30px, transparent 30px),
+    var(--field);
+  border-radius: 0 0 4px 4px;
+  opacity: var(--op-field);
+  transition: opacity .15s ease;
+}
+.paper::-webkit-scrollbar { width: 6px; }
+.paper::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 3px; }
+
+body.active .paper,
+body.active .binding { opacity: 1; }
+
+.row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: var(--lh);
+  border-bottom: 1px solid var(--rule);
+}
+
+.text {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-left: 38px;
+  white-space: pre;
+  overflow: hidden;
+  line-height: var(--lh);
+  cursor: default;
+}
+.text.clipped {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+}
+body.active .text { cursor: text; }
+
+.empty {
+  padding-left: 38px;
+  line-height: var(--lh);
+  color: var(--ink-soft);
+}
+
+.edit {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  padding: 0 4px 0 38px;
+  border: 0;
+  outline: 0;
+  font: inherit;
+  color: inherit;
+  background: var(--hover);
+  user-select: text;
+}
+
+.del {
+  flex: 0 0 26px;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: 600 15px/1 "Segoe UI", sans-serif;
+  opacity: 0;
+  cursor: pointer;
+}
+body.active .del { opacity: .2; }
+body.active .row:hover .del { opacity: .55; }
+body.active .del:hover { opacity: .95; color: var(--error); }
+.row.editing .del { visibility: hidden; }
+
+.row.removing { animation: strike .18s ease forwards; }
+@keyframes strike { to { opacity: 0; transform: translateX(10px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .row.removing { animation: none; }
+  .paper, .binding { transition: none; }
+}

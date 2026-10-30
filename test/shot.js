@@ -1,0 +1,44 @@
+// Тестовый прогон: снимки окна в разных состояниях. Запускается только с STICKER_SHOT.
+const fs = require('fs');
+const path = require('path');
+const wait = (ms) => new Promise(r => setTimeout(r, ms));
+module.exports = async ({ sticker, send, openConfig, app, getConfigWin }) => {
+  const out = process.env.STICKER_SHOT;
+  const shot = async (name, win = sticker) => {
+    const img = await win.webContents.capturePage();
+    fs.writeFileSync(path.join(out, name + '.png'), img.toPNG());
+  };
+  const js = (code) => sticker.webContents.executeJavaScript(code);
+  await wait(2500);
+  await shot('1-idle');
+  send('active', true);
+  await wait(400);
+  await shot('2-active');
+  await js(`document.querySelector('.row:nth-child(2) .text').click()`);
+  await wait(300);
+  await shot('3-editing');
+  await js(`(() => { const i=document.querySelector('.edit'); i.value='Позвонить в банк'; i.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter'})); })()`);
+  await js(`document.getElementById('add').click()`);
+  await wait(300);
+  await shot('4-new-line');
+  await js(`(() => { const i=document.querySelector('.edit'); i.value='Новая строка через плюс'; i.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter'})); })()`);
+  await js(`document.querySelector('.row:nth-child(1) .del').dispatchEvent(new MouseEvent('dblclick'))`);
+  await wait(600);
+  await shot('5-after-delete');
+  console.log('TITLES', await js(`[...document.querySelectorAll('.text')].map(t=>t.title||'-').join(' | ')`));
+  console.log('SIZE', sticker.getContentSize());
+  await js(`document.getElementById('theme').click()`);
+  await wait(500);
+  await shot('6-dark');
+  send('active', false);
+  await wait(400);
+  await shot('7-dark-idle');
+  openConfig();
+  await wait(1500);
+  const cw = getConfigWin();
+  await cw.webContents.executeJavaScript(`document.getElementById('text').value = document.getElementById('text').value.replace('"Segoe UI"', '"Segoe IU"').replace('"#F2DC6B"','"#F2DC6"'); document.getElementById('save').click()`);
+  await wait(800);
+  await shot('8-config-errors', cw);
+  await wait(3000);
+  app.exit(0);
+};
