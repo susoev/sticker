@@ -19,9 +19,9 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -33,7 +33,17 @@ jobs:
         shell: bash
         run: npm version "1.1.${{ github.run_number }}" --no-git-tag-version --allow-same-version
 
-      - name: Build and publish
-        run: npm run release
+      - name: Build
+        run: npm run dist
+
+      # Релиз с тремя файлами: установщик, blockmap и latest.yml (по нему программа находит обновление).
+      - name: Publish release
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NOTES: ${{ github.event.head_commit.message }}
+        run: |
+          V=$(node -p "require('./package.json').version")
+          ls -la dist
+          gh release create "v$V" dist/*.exe dist/*.blockmap dist/latest.yml \
+            --title "v$V" --notes "${NOTES:-Сборка $V}" --target "${{ github.sha }}"
